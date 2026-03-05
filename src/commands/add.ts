@@ -3,21 +3,45 @@ import path from "path";
 import crypto from "crypto";
 
 export function add(filePath: string) {
-    // the filePath users sends is a just the path of the file which he wants
-    // but that wouldn't work as we need complete path of the file
-    // so we need path.resolve() for that to work properly!
-    const completeFilePath: string = path.resolve(filePath);
-    let fileContent: string = fs.readFileSync(completeFilePath, "utf-8");
-    let hashString: string = crypto
+    const absolutePath: string = path.resolve(filePath);
+    const fileContent: string = fs.readFileSync(absolutePath, "utf-8");
+
+    console.log(`Reading file: ${absolutePath}`);
+
+    const hash: string = crypto
         .createHash("sha256")
         .update(fileContent)
         .digest("hex");
-    let hashFilePath: string = path.join(
+
+    console.log(`Hash generated: ${hash}`);
+
+    const objectPath: string = path.join(
         process.cwd(),
         ".groot",
         "objects",
-        hashString,
+        hash,
     );
-    fs.writeFileSync(hashFilePath, fileContent);
-    console.log(`Added ${completeFilePath} with hashCode ${hashString}`);
+    fs.writeFileSync(objectPath, fileContent);
+
+    console.log(`Saved to objects: ${hash}`);
+
+    const indexPath: string = path.join(process.cwd(), ".groot", "index.json");
+    const stagingArea: {
+        file: string;
+        hash: string;
+    }[] = JSON.parse(fs.readFileSync(indexPath, "utf-8"));
+
+    let existingIndex: number = stagingArea.findIndex(
+        (item) => item.file === absolutePath,
+    );
+
+    if (stagingArea[existingIndex]) {
+        stagingArea[existingIndex].hash = hash;
+    } else {
+        stagingArea.push({ file: absolutePath, hash });
+        console.log(`Staged new file: ${filePath}`);
+    }
+
+    fs.writeFileSync(indexPath, JSON.stringify(stagingArea, null, 2));
+    console.log(`Staging area updated successfully.`);
 }
