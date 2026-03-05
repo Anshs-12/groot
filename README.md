@@ -1,4 +1,4 @@
-# gitsvcs
+# groot
 
 To install dependencies:
 
