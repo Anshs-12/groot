@@ -1,0 +1,14 @@
+{
+    "name": "gitsvcs",
+    "version": "1.0.0",
+    "type": "module",
+    "private": true,
+    "scripts": {
+        "dev": "bun run --watch src/cli.ts",
+        "start": "bun run src/cli.ts"
+    },
+    "devDependencies": {
+        "@types/bun": "latest",
+        "typescript": "^5.9.3"
+    }
+}
