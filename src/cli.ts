@@ -1,3 +1,5 @@
+#!/usr/bin/env bun
+// the above is a shebang file which helps in telling how to run this file.
 import { init } from "./commands/init.ts";
 import { add } from "./commands/add.ts";
 import { commit } from "./commands/commit.ts";

@@ -1,8 +1,11 @@
 {
-    "name": "gitsvcs",
+    "name": "groot-vcs",
     "version": "1.0.0",
     "type": "module",
     "private": true,
+    "bin": {
+        "groot": "./src/cli.ts"
+    },
     "scripts": {
         "dev": "bun run --watch src/cli.ts",
         "start": "bun run src/cli.ts"
