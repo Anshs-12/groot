@@ -3,6 +3,7 @@
 import { init } from "./commands/init.ts";
 import { add } from "./commands/add.ts";
 import { commit } from "./commands/commit.ts";
+import { log, logOneline } from "./commands/log.ts";
 const args = process.argv.slice(2);
 const command = args[0];
 
@@ -31,6 +32,19 @@ switch (command) {
                 break;
             }
             commit(args[2]);
+            break;
+        }
+    case "log":
+        if (args[1] == null) {
+            log();
+            break;
+        } else if (args[1] == "--oneline") {
+            logOneline();
+            break;
+        } else {
+            console.log(
+                `Invalid command, please refer groot /help for all commands!`,
+            );
             break;
         }
     default:
