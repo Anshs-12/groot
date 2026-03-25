@@ -38,7 +38,7 @@ export function add(filePath: string) {
     if (stagingArea[existingIndex]) {
         stagingArea[existingIndex].hash = hash;
     } else {
-        stagingArea.push({ file: absolutePath, hash });
+        stagingArea.push({ file: absolutePath, hash: hash });
         console.log(`Staged new file: ${filePath}`);
     }
 
