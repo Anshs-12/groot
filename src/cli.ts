@@ -4,6 +4,8 @@ import { init } from "./commands/init.ts";
 import { add } from "./commands/add.ts";
 import { commit } from "./commands/commit.ts";
 import { log, logOneline } from "./commands/log.ts";
+import { status } from "./commands/status.ts";
+import { help } from "./commands/help.ts";
 const args = process.argv.slice(2);
 const command = args[0];
 
@@ -47,6 +49,10 @@ switch (command) {
             );
             break;
         }
+    case "status":
+        status();
+        break;
     default:
-        console.log(`Unknown Command called: ${command}`);
+        console.log(`unknown command called!`);
+        break;
 }

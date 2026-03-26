@@ -1,81 +1,107 @@
 import path from "path";
 import fs from "fs";
-import { readGrootIgnore } from "../utils";
-import type { indexJsonFileStructure } from "../utils";
-import type { commitStructure } from "../utils";
+import { readGrootIgnore, fetchGrootPath } from "../utils";
+import type { indexJsonFileStructure, commitStructure } from "../utils";
 import crypto from "crypto";
-import { dir } from "console";
+import { getHeadPointer } from "./log";
+
+let stagingArea: string[] = [];
+let modifiedFile: string[] = [];
+let unTrackedFile: string[] = [];
 
 export function status() {
-    // scanning the entire project directory for all the folder/files to be scanned!
-    let projectDirArray: string[] = fs.readdirSync(process.cwd());
-    console.log(projectDirArray);
-
-    // using a set to reduce lookup time complexity to O(1);
     let grootIgnoreContentSet = new Set<string>(readGrootIgnore());
-    console.log(grootIgnoreContentSet);
 
-    let stagingArea: string[] = [];
-    let modifiedFile: string[] = [];
-    let unTrackedFile: string[] = [];
-
-    projectDirArray.forEach((dirPath) => {
-        let dynamicPathOfdirPath: string = path.join(
-            process.cwd(),
-            `${dirPath}`,
-        );
-
-        if (!grootIgnoreContentSet.has(dynamicPathOfdirPath)) {
-            if (fs.statSync(dynamicPathOfdirPath).isDirectory()) {
-                scanDirectory(dynamicPathOfdirPath);
-            } else {
-                let checkIndexJsonValue: string | boolean =
-                    checkIndexJSON(dynamicPathOfdirPath);
-                if (checkIndexJsonValue === "modified") {
-                    // this means that this file is not modified and has been added to groot to be committed.
-                    modifiedFile.push(dynamicPathOfdirPath);
-                } else if (checkIndexJsonValue) {
-                    stagingArea.push(dynamicPathOfdirPath);
-                } else {
-                    // this is when the file is not being added or tracked
-                    // that is no staging area at all
-                    // Untracked File
-                    unTrackedFile.push(dynamicPathOfdirPath);
-                }
-            }
-        }
-    });
-
-    printStagingArea(stagingArea);
-    printStagingArea(modifiedFile);
-    printStagingArea(unTrackedFile);
-}
-
-function scanDirectory(dirPath: string): string[] {}
-
-function typeCheck(dynamicPathOfdirPath: string): string {}
-
-function checkIndexJSON(dirPath: string): boolean | string {
     let indexJsonPath: string = path.join(
-        process.cwd(),
+        fetchGrootPath(),
         ".groot",
         "index.json",
     );
 
-    let receivedFileContent: string = fs.readFileSync(dirPath, "utf-8");
-
-    let receivedFileContentHash: string = crypto
-        .createHash("sha256")
-        .update(receivedFileContent)
-        .digest("hex");
-
     let indexJsonFileContent: indexJsonFileStructure[] = JSON.parse(
         fs.readFileSync(indexJsonPath, "utf-8"),
     );
+    scanDirectory(
+        fetchGrootPath(),
+        grootIgnoreContentSet,
+        indexJsonFileContent,
+    );
 
+    printStagingArea(stagingArea);
+    printModifiedFiles(modifiedFile);
+    printUntrackedFiles(unTrackedFile);
+}
+
+// this function returns the array of total files contained in the folder!
+function scanDirectory(
+    dirPath: string,
+    grootIgnoreContentSet: Set<string>,
+    indexJsonFileContent: indexJsonFileStructure[],
+) {
+    // scanning the entire project directory for all the folder/files to be scanned!
+    let projectDirArray: string[] = fs.readdirSync(dirPath);
+
+    // using a set to reduce lookup time complexity to O(1);
+
+    projectDirArray.forEach((eachPath) => {
+        let dynamicPathOfdirPath: string = path.join(dirPath, eachPath);
+
+        if (!grootIgnoreContentSet.has(path.basename(dynamicPathOfdirPath))) {
+            if (fs.statSync(dynamicPathOfdirPath).isDirectory()) {
+                scanDirectory(
+                    dynamicPathOfdirPath,
+                    grootIgnoreContentSet,
+                    indexJsonFileContent,
+                );
+            } else {
+                let receivedFileContent: string = fs.readFileSync(
+                    dynamicPathOfdirPath,
+                    "utf-8",
+                );
+
+                let receivedFileContentHash: string = crypto
+                    .createHash("sha256")
+                    .update(receivedFileContent)
+                    .digest("hex");
+
+                let dynamicFileContent: indexJsonFileStructure = {
+                    file: dynamicPathOfdirPath,
+                    hash: receivedFileContentHash,
+                };
+
+                let checkIndexJsonValue: string | boolean = checkIndexJSON(
+                    dynamicFileContent,
+                    indexJsonFileContent,
+                );
+                if (checkIndexJsonValue === "modified") {
+                    // this means that this file is not modified and has been added to groot to be committed.
+                    modifiedFile.push(dynamicFileContent.file);
+                } else if (checkIndexJsonValue) {
+                    stagingArea.push(dynamicFileContent.file);
+                } else {
+                    // this is when the file is not being added or tracked
+                    // that is no staging area at all
+                    // Untracked File
+                    let checkCommitFolderValue: string | boolean =
+                        checkCommitFolder(dynamicFileContent);
+                    if (checkCommitFolderValue === "modified") {
+                        modifiedFile.push(dynamicFileContent.file);
+                    } else if (checkCommitFolderValue === "untracked") {
+                        unTrackedFile.push(dynamicFileContent.file);
+                    }
+                }
+            }
+        }
+    });
+}
+
+function checkIndexJSON(
+    dynamicFileContent: indexJsonFileStructure,
+    indexJsonFileContent: indexJsonFileStructure[],
+): boolean | string {
     for (let currItem of indexJsonFileContent) {
-        if (currItem.file === dirPath) {
-            if (currItem.hash === receivedFileContentHash) return true;
+        if (currItem.file === dynamicFileContent.file) {
+            if (currItem.hash === dynamicFileContent.hash) return true;
             else {
                 return "modified";
             }
@@ -84,42 +110,89 @@ function checkIndexJSON(dirPath: string): boolean | string {
     return false;
 }
 
+function checkCommitFolder(
+    dynamicFileContent: indexJsonFileStructure,
+): boolean | string {
+    let grootDirPath: string = fetchGrootPath();
+    let commitPointer: string | null = getHeadPointer(grootDirPath);
+    while (commitPointer != null) {
+        let commitFolderPath: string = path.join(
+            fetchGrootPath(),
+            ".groot",
+            "commits",
+            `${commitPointer}` + ".json",
+        );
+
+        let commitFolderContent: commitStructure = JSON.parse(
+            fs.readFileSync(commitFolderPath, "utf-8"),
+        );
+        // no need for let x: indexJsonFileStructure as its an error
+        // and TypeScript already inherits the type of the value its being iterated on
+        // So in this case x gets the type indexJsonFileStructure
+        for (let x of commitFolderContent.files) {
+            if (x.file === dynamicFileContent.file) {
+                if (x.hash === dynamicFileContent.hash) {
+                    return false;
+                } else {
+                    return "modified";
+                }
+            }
+        }
+        commitPointer = commitFolderContent.parent;
+    }
+    return "untracked";
+}
+
 function printStagingArea(pathArray: string[]) {
+    if (pathArray.length === 0) return;
     console.log(`Changes waiting to be committed:`);
     console.log(
         `use \"groot restore --staged <file>...\" to unstage or else groot /help`,
     );
     pathArray.forEach((eachPath) => {
-        console.log(`new file: ${eachPath}`);
-    });
-}
-
-function commitFolderLookup(pathToLook: string): boolean {
-    let commitFolderPath: string = path.join(
-        process.cwd(),
-        ".groot",
-        "commits",
-    );
-    let commitFolderContent: string[] = fs.readdirSync(commitFolderPath);
-
-    commitFolderContent.forEach((eachCommitId) => {
-        let eachCommitPath: string = path.join(
-            process.cwd(),
-            ".groot",
-            "commits",
-            eachCommitId + ".json",
+        console.log(
+            `        \x1b[38;2;160;213;133mnew file: ${eachPath}\x1b[0m`,
         );
-
-        let eachCommitContent: commitStructure = JSON.parse(eachCommitPath);
-
-        eachCommitContent.files;
     });
-    return false;
 }
 
-status();
+function printUntrackedFiles(pathArray: string[]) {
+    if (pathArray.length === 0) return;
+    console.log(`Untracked files:`);
+    console.log(
+        `  (use \"groot add <file>...\" to include what will be committed or else groot /help`,
+    );
+    pathArray.forEach((eachPath) => {
+        console.log(
+            `         \x1b[38;2;255;90;90m${path.basename(eachPath)}\x1b[0m`,
+        );
+    });
+}
+
+function printModifiedFiles(pathArray: string[]) {
+    if (pathArray.length === 0) return;
+    console.log(`Changes not staged for commit:`);
+    console.log(
+        `  (use \"groot add <file>...\" to update what will be committed or else groot /help`,
+    );
+    pathArray.forEach((eachPath) => {
+        console.log(
+            `         \x1b[38;2;245;200;87mmodified:   ${eachPath}\x1b[0m`,
+        );
+    });
+}
+// this is modified
 
 /*
+
+    ScanDirectory():
+        first we call scan directory with fetchGrootPath and tell it to scan all this
+
+        when it finds a folder it again recursively calls scanDirectory with this new folder path and then goes on the cycle
+
+        in the end we get three different arrays
+        thats it
+
     Status works in three ways where groot needs to answer three questions:
 
     1. are there any files which it has never seen or heard of,
