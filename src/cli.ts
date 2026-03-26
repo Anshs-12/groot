@@ -52,7 +52,10 @@ switch (command) {
     case "status":
         status();
         break;
+    case "help":
+        help();
+        break;
     default:
-        console.log(`unknown command called!`);
+        help();
         break;
 }
