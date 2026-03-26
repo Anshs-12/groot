@@ -1,30 +1,23 @@
 import fs from "fs";
 import path from "path";
 import crypto from "crypto";
+import type { commitStructure } from "../utils";
+import type { indexJsonFileStructure } from "../utils";
+import { fetchGrootPath } from "../utils";
 
 export function commit(message: string) {
-    let indexJsonPath: string = path.join(
-        process.cwd(),
-        ".groot",
-        "index.json",
-    );
+    let grootDirPath: string = fetchGrootPath();
+    let indexJsonPath: string = path.join(grootDirPath, ".groot", "index.json");
 
-    let content: { file: string; hash: string }[] = JSON.parse(
+    let content: indexJsonFileStructure[] = JSON.parse(
         fs.readFileSync(indexJsonPath, "utf-8"),
     );
     if (content.length === 0) {
         console.log(`Nothing staged which is pending to be commit`);
     } else {
         // defining the structure of the commit
-        type commitStructure = {
-            commitId: string;
-            commitMessage: string;
-            timeStamp: string;
-            files: { file: string; hash: string }[];
-            parent: string | null;
-        };
 
-        let headPath: string = path.join(process.cwd(), ".groot", "HEAD.json");
+        let headPath: string = path.join(grootDirPath, ".groot", "HEAD.json");
         let head: string = JSON.parse(fs.readFileSync(headPath, "utf-8"));
         let commitObject: commitStructure = {
             commitId: "",
@@ -41,7 +34,7 @@ export function commit(message: string) {
         commitObject.commitId = commitIdHash;
 
         let commitFilePath: string = path.join(
-            process.cwd(),
+            grootDirPath,
             ".groot",
             "commits",
             commitIdHash + ".json",

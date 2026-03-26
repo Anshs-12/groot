@@ -1,5 +1,6 @@
 import path from "path";
 import fs from "fs";
+import { fetchGrootPath } from "../utils";
 
 type commitStructure = {
     commitId: string;
@@ -18,11 +19,12 @@ export function logOneline() {
 }
 
 function iterateCommits(oneline: boolean) {
-    let commitPointer: string = getHeadPointer();
+    let grootDirPath: string = fetchGrootPath();
+    let commitPointer: string | null = getHeadPointer(grootDirPath);
     let headPointer: boolean = true;
     while (commitPointer != null) {
         let commitPath: string = path.join(
-            process.cwd(),
+            grootDirPath,
             ".groot",
             "commits",
             `${commitPointer}` + ".json",
@@ -43,8 +45,8 @@ function iterateCommits(oneline: boolean) {
     }
 }
 
-function getHeadPointer(): string {
-    let headJSONPath: string = path.join(process.cwd(), ".groot", "HEAD.json");
+export function getHeadPointer(grootDirPath: string): string {
+    let headJSONPath: string = path.join(grootDirPath, ".groot", "HEAD.json");
     let headContent: string = JSON.parse(
         fs.readFileSync(headJSONPath, "utf-8"),
     );

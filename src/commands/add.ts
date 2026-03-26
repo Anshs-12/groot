@@ -1,11 +1,12 @@
 import fs from "fs";
 import path from "path";
 import crypto from "crypto";
+import { fetchGrootPath } from "../utils";
 
 export function add(filePath: string) {
     const absolutePath: string = path.resolve(filePath);
     const fileContent: string = fs.readFileSync(absolutePath, "utf-8");
-
+    let grootDirPath: string = fetchGrootPath();
     console.log(`Reading file: ${absolutePath}`);
 
     const hash: string = crypto
@@ -16,7 +17,7 @@ export function add(filePath: string) {
     console.log(`Hash generated: ${hash}`);
 
     const objectPath: string = path.join(
-        process.cwd(),
+        grootDirPath,
         ".groot",
         "objects",
         hash,
@@ -25,7 +26,7 @@ export function add(filePath: string) {
 
     console.log(`Saved to objects: ${hash}`);
 
-    const indexPath: string = path.join(process.cwd(), ".groot", "index.json");
+    const indexPath: string = path.join(grootDirPath, ".groot", "index.json");
     const stagingArea: {
         file: string;
         hash: string;
