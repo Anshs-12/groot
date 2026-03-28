@@ -1,14 +1,7 @@
 import path from "path";
 import fs from "fs";
 import { fetchGrootPath } from "../utils";
-
-type commitStructure = {
-    commitId: string;
-    commitMessage: string;
-    timeStamp: string;
-    files: { file: string; hash: string }[];
-    parent: string;
-};
+import type { commitStructure } from "../utils";
 
 export function log() {
     iterateCommits(false);
