@@ -9,21 +9,40 @@ export function commit(message: string) {
     let grootDirPath: string = fetchGrootPath();
     let indexJsonPath: string = path.join(grootDirPath, ".groot", "index.json");
 
-    let content: indexJsonFileStructure[] = JSON.parse(
+    let indexJsonFilecontent: indexJsonFileStructure[] = JSON.parse(
         fs.readFileSync(indexJsonPath, "utf-8"),
     );
-    if (content.length === 0) {
+    if (indexJsonFilecontent.length === 0) {
         console.log(`Nothing staged which is pending to be commit`);
     } else {
         // defining the structure of the commit
 
         let headPath: string = path.join(grootDirPath, ".groot", "HEAD.json");
+        // reading out the HEAD.json content finding the last commit
         let head: string = JSON.parse(fs.readFileSync(headPath, "utf-8"));
+        // retrieving the snapshot if it exists otherwise creating a new snapshot for the intial commit;
+        let retrievedRecord: Record<string, string>;
+        if (head === null) {
+            retrievedRecord = fillRecord(indexJsonFilecontent);
+        } else {
+            // getting the record from the parent commit;
+            let parentCommitPath: string = path.join(
+                grootDirPath,
+                ".groot",
+                "commits",
+                `${head}.json`,
+            );
+            let parentCommitContent: commitStructure = JSON.parse(
+                fs.readFileSync(parentCommitPath, "utf-8"),
+            );
+            retrievedRecord = parentCommitContent.snapshot;
+            retrievedRecord = fillRecord(indexJsonFilecontent, retrievedRecord);
+        }
         let commitObject: commitStructure = {
             commitId: "",
             commitMessage: message,
             timeStamp: new Date().toISOString(),
-            files: content,
+            snapshot: retrievedRecord,
             parent: head,
         };
         let commitIdHash: string = crypto
@@ -49,4 +68,14 @@ export function commit(message: string) {
         fs.writeFileSync(headPath, JSON.stringify(commitIdHash, null, 2));
         fs.writeFileSync(indexJsonPath, JSON.stringify([], null, 2));
     }
+}
+
+export function fillRecord(
+    indexJsonFilecontent: indexJsonFileStructure[],
+    newRecord: Record<string, string> = {},
+): Record<string, string> {
+    indexJsonFilecontent.forEach((eachItem) => {
+        newRecord[eachItem.file] = eachItem.hash;
+    });
+    return newRecord;
 }

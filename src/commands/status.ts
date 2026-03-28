@@ -21,10 +21,41 @@ export function status() {
     let indexJsonFileContent: indexJsonFileStructure[] = JSON.parse(
         fs.readFileSync(indexJsonPath, "utf-8"),
     );
+    let grootFolderPath: string = fetchGrootPath();
+    let headJsonContent: string = JSON.parse(
+        fs.readFileSync(
+            path.join(grootFolderPath, ".groot", `HEAD.json`),
+            "utf-8",
+        ),
+    );
+
+    let allSnapShots: Record<string, string> = {};
+    if (headJsonContent !== null) {
+        let headCommitContent: commitStructure = JSON.parse(
+            fs.readFileSync(
+                path.join(
+                    grootFolderPath,
+                    ".groot",
+                    "commits",
+                    `${headJsonContent}.json`,
+                ),
+                "utf-8",
+            ),
+        );
+        allSnapShots = headCommitContent.snapshot;
+    }
+
+    // creating IndexJsonRecord for faster lookup rather than looping again and again.
+    let indexJsonRecord: Record<string, string> = {};
+    indexJsonFileContent.forEach((eachItem) => {
+        indexJsonRecord[eachItem.file] = eachItem.hash;
+    });
+
     scanDirectory(
-        fetchGrootPath(),
+        grootFolderPath,
         grootIgnoreContentSet,
-        indexJsonFileContent,
+        indexJsonRecord,
+        allSnapShots,
     );
 
     printStagingArea(stagingArea);
@@ -36,7 +67,8 @@ export function status() {
 function scanDirectory(
     dirPath: string,
     grootIgnoreContentSet: Set<string>,
-    indexJsonFileContent: indexJsonFileStructure[],
+    indexJsonRecord: Record<string, string>,
+    allSnapShots: Record<string, string>,
 ) {
     // scanning the entire project directory for all the folder/files to be scanned!
     let projectDirArray: string[] = fs.readdirSync(dirPath);
@@ -51,7 +83,8 @@ function scanDirectory(
                 scanDirectory(
                     dynamicPathOfdirPath,
                     grootIgnoreContentSet,
-                    indexJsonFileContent,
+                    indexJsonRecord,
+                    allSnapShots,
                 );
             } else {
                 let receivedFileContent: string = fs.readFileSync(
@@ -71,7 +104,7 @@ function scanDirectory(
 
                 let checkIndexJsonValue: string | boolean = checkIndexJSON(
                     dynamicFileContent,
-                    indexJsonFileContent,
+                    indexJsonRecord,
                 );
                 if (checkIndexJsonValue === "modified") {
                     // this means that this file is not modified and has been added to groot to be committed.
@@ -82,11 +115,11 @@ function scanDirectory(
                     // this is when the file is not being added or tracked
                     // that is no staging area at all
                     // Untracked File
-                    let checkCommitFolderValue: string | boolean =
-                        checkCommitFolder(dynamicFileContent);
-                    if (checkCommitFolderValue === "modified") {
+                    let checkCommitSnapshotValue: string | boolean =
+                        checkCommitSnapshot(dynamicFileContent, allSnapShots);
+                    if (checkCommitSnapshotValue === "modified") {
                         modifiedFile.push(dynamicFileContent.file);
-                    } else if (checkCommitFolderValue === "untracked") {
+                    } else if (checkCommitSnapshotValue === "untracked") {
                         unTrackedFile.push(dynamicFileContent.file);
                     }
                 }
@@ -97,48 +130,38 @@ function scanDirectory(
 
 function checkIndexJSON(
     dynamicFileContent: indexJsonFileStructure,
-    indexJsonFileContent: indexJsonFileStructure[],
+    indexJsonRecord: Record<string, string>,
 ): boolean | string {
-    for (let currItem of indexJsonFileContent) {
-        if (currItem.file === dynamicFileContent.file) {
-            if (currItem.hash === dynamicFileContent.hash) return true;
-            else {
-                return "modified";
-            }
+    let currFileHash: string | undefined =
+        indexJsonRecord[dynamicFileContent.file];
+    if (currFileHash !== undefined) {
+        if (currFileHash === dynamicFileContent.hash) {
+            return true;
+        } else {
+            return "modified";
         }
     }
     return false;
 }
 
-function checkCommitFolder(
+function checkCommitSnapshot(
     dynamicFileContent: indexJsonFileStructure,
+    allSnapShots: Record<string, string>,
 ): boolean | string {
-    let grootDirPath: string = fetchGrootPath();
-    let commitPointer: string | null = getHeadPointer(grootDirPath);
-    while (commitPointer != null) {
-        let commitFolderPath: string = path.join(
-            fetchGrootPath(),
-            ".groot",
-            "commits",
-            `${commitPointer}` + ".json",
-        );
+    // no need for let x: indexJsonFileStructure as its an error
+    // and TypeScript already inherits the type of the value its being iterated on
+    // So in this case x gets the type indexJsonFileStructure
 
-        let commitFolderContent: commitStructure = JSON.parse(
-            fs.readFileSync(commitFolderPath, "utf-8"),
-        );
-        // no need for let x: indexJsonFileStructure as its an error
-        // and TypeScript already inherits the type of the value its being iterated on
-        // So in this case x gets the type indexJsonFileStructure
-        for (let x of commitFolderContent.files) {
-            if (x.file === dynamicFileContent.file) {
-                if (x.hash === dynamicFileContent.hash) {
-                    return false;
-                } else {
-                    return "modified";
-                }
-            }
+    // implementing O(1) lookup using record!
+
+    let snapShotHash: string | undefined =
+        allSnapShots[dynamicFileContent.file];
+    if (snapShotHash !== undefined) {
+        if (snapShotHash === dynamicFileContent.hash) {
+            return false;
+        } else {
+            return "modified";
         }
-        commitPointer = commitFolderContent.parent;
     }
     return "untracked";
 }

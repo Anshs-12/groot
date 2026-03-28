@@ -43,6 +43,6 @@ export type commitStructure = {
     commitId: string;
     commitMessage: string;
     timeStamp: string;
-    files: indexJsonFileStructure[];
+    snapshot: Record<string, string>;
     parent: string | null;
 };
