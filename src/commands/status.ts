@@ -3,7 +3,6 @@ import fs from "fs";
 import { readGrootIgnore, fetchGrootPath } from "../utils";
 import type { indexJsonFileStructure, commitStructure } from "../utils";
 import crypto from "crypto";
-import { getHeadPointer } from "./log";
 
 let stagingArea: string[] = [];
 let modifiedFile: string[] = [];
@@ -18,9 +17,6 @@ export function status() {
         "index.json",
     );
 
-    let indexJsonFileContent: indexJsonFileStructure[] = JSON.parse(
-        fs.readFileSync(indexJsonPath, "utf-8"),
-    );
     let grootFolderPath: string = fetchGrootPath();
     let headJsonContent: string = JSON.parse(
         fs.readFileSync(
@@ -45,12 +41,10 @@ export function status() {
         allSnapShots = headCommitContent.snapshot;
     }
 
-    // creating IndexJsonRecord for faster lookup rather than looping again and again.
-    let indexJsonRecord: Record<string, string> = {};
-    indexJsonFileContent.forEach((eachItem) => {
-        indexJsonRecord[eachItem.file] = eachItem.hash;
-    });
-
+    // retri IndexJsonRecord for faster lookup rather than looping again and again.
+    let indexJsonRecord: Record<string, string> = JSON.parse(
+        fs.readFileSync(indexJsonPath, "utf-8"),
+    );
     scanDirectory(
         grootFolderPath,
         grootIgnoreContentSet,

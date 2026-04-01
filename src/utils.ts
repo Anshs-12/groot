@@ -34,6 +34,13 @@ export function fetchGrootPath(): string {
     */
 }
 
+export function fetchIndexJsonPath(): string {
+    return path.join(fetchGrootPath(), ".groot", "index.json");
+}
+export function fetchIndexJsonContent(): Record<string, string> {
+    return JSON.parse(fs.readFileSync(fetchIndexJsonPath(), "utf-8"));
+}
+
 export type indexJsonFileStructure = {
     file: string;
     hash: string;

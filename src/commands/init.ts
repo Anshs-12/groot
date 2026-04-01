@@ -21,11 +21,11 @@ export function init() {
          \\__, |_|  \\___/ \\___/ \\__|
          |___/
         `);
-        console.log("Initializing repository...");
+        console.log("Initializing an empty groot repository...");
         fs.mkdirSync(grootFolderPath);
         fs.mkdirSync(path.join(grootFolderPath, "objects"));
         fs.mkdirSync(path.join(grootFolderPath, "commits"));
-        fs.writeFileSync(path.join(grootFolderPath, "index.json"), "[]");
+        fs.writeFileSync(path.join(grootFolderPath, "index.json"), "{}");
         fs.writeFileSync(path.join(grootFolderPath, "HEAD.json"), "null");
 
         // creating an .grootIgnore file to ignore the files which are not required

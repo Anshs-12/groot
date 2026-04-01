@@ -2,17 +2,16 @@ import fs from "fs";
 import path from "path";
 import crypto from "crypto";
 import type { commitStructure } from "../utils";
-import type { indexJsonFileStructure } from "../utils";
 import { fetchGrootPath } from "../utils";
 
 export function commit(message: string) {
     let grootDirPath: string = fetchGrootPath();
     let indexJsonPath: string = path.join(grootDirPath, ".groot", "index.json");
 
-    let indexJsonFilecontent: indexJsonFileStructure[] = JSON.parse(
+    let indexJsonFilecontent: Record<string, string> = JSON.parse(
         fs.readFileSync(indexJsonPath, "utf-8"),
     );
-    if (indexJsonFilecontent.length === 0) {
+    if (Object.keys(indexJsonFilecontent).length === 0) {
         console.log(`Nothing staged which is pending to be commit`);
     } else {
         // defining the structure of the commit
@@ -23,7 +22,7 @@ export function commit(message: string) {
         // retrieving the snapshot if it exists otherwise creating a new snapshot for the intial commit;
         let retrievedRecord: Record<string, string>;
         if (head === null) {
-            retrievedRecord = fillRecord(indexJsonFilecontent);
+            retrievedRecord = indexJsonFilecontent;
         } else {
             // getting the record from the parent commit;
             let parentCommitPath: string = path.join(
@@ -35,8 +34,11 @@ export function commit(message: string) {
             let parentCommitContent: commitStructure = JSON.parse(
                 fs.readFileSync(parentCommitPath, "utf-8"),
             );
-            retrievedRecord = parentCommitContent.snapshot;
-            retrievedRecord = fillRecord(indexJsonFilecontent, retrievedRecord);
+            let mergedRecords = {
+                ...parentCommitContent.snapshot,
+                ...indexJsonFilecontent,
+            };
+            retrievedRecord = mergedRecords;
         }
         let commitObject: commitStructure = {
             commitId: "",
@@ -66,16 +68,6 @@ export function commit(message: string) {
             space — how many spaces to indent. 2 makes it pretty and readable.
         */
         fs.writeFileSync(headPath, JSON.stringify(commitIdHash, null, 2));
-        fs.writeFileSync(indexJsonPath, JSON.stringify([], null, 2));
+        fs.writeFileSync(indexJsonPath, JSON.stringify({}, null, 2));
     }
-}
-
-export function fillRecord(
-    indexJsonFilecontent: indexJsonFileStructure[],
-    newRecord: Record<string, string> = {},
-): Record<string, string> {
-    indexJsonFilecontent.forEach((eachItem) => {
-        newRecord[eachItem.file] = eachItem.hash;
-    });
-    return newRecord;
 }
