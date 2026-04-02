@@ -40,3 +40,6 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 
 #tasks
 tasks.txt
+
+Flow.txt
+Test.ts
