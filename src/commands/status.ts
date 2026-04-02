@@ -52,6 +52,15 @@ export function status() {
         allSnapShots,
     );
 
+    // checking if the arrays are empty which would lead to nothing to commit, working tree clean.
+    if (
+        stagingArea.length === 0 &&
+        modifiedFile.length === 0 &&
+        unTrackedFile.length === 0
+    ) {
+        printEmptyStagingArea();
+    }
+
     printStagingArea(stagingArea);
     printModifiedFiles(modifiedFile);
     printUntrackedFiles(unTrackedFile);
@@ -158,6 +167,12 @@ function checkCommitSnapshot(
         }
     }
     return "untracked";
+}
+
+// printing status
+
+function printEmptyStagingArea() {
+    console.log(`nothing to commit, working tree clean`);
 }
 
 function printStagingArea(pathArray: string[]) {
