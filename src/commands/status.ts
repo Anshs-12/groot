@@ -9,6 +9,9 @@ let modifiedFile: string[] = [];
 let unTrackedFile: string[] = [];
 
 export function status() {
+    stagingArea = [];
+    modifiedFile = [];
+    unTrackedFile = [];
     let grootIgnoreContentSet = new Set<string>(readGrootIgnore());
 
     let indexJsonPath: string = path.join(
