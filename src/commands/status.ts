@@ -60,7 +60,7 @@ export function status() {
         printEmptyStagingArea();
     }
 
-    printStagingArea(stagingArea);
+    printStagingArea(stagingArea, allSnapShots);
     printModifiedFiles(modifiedFile);
     printUntrackedFiles(unTrackedFile);
 }
@@ -172,15 +172,20 @@ function printEmptyStagingArea() {
     console.log(`nothing to commit, working tree clean`);
 }
 
-function printStagingArea(pathArray: string[]) {
+function printStagingArea(
+    pathArray: string[],
+    allSnapShots: Record<string, string>,
+) {
     if (pathArray.length === 0) return;
     console.log(`Changes waiting to be committed:`);
     console.log(
         `use \"groot restore --staged <file>...\" to unstage or else groot /help`,
     );
     pathArray.forEach((eachPath) => {
+        let modified: boolean = allSnapShots[eachPath] !== undefined;
+        let fileType: string = modified ? "modified" : "new file";
         console.log(
-            `        \x1b[38;2;160;213;133mnew file: ${eachPath}\x1b[0m`,
+            `        \x1b[38;2;160;213;133m${fileType}: ${eachPath}\x1b[0m`,
         );
     });
 }
