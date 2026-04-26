@@ -1,11 +1,11 @@
 import fs from "fs";
 import path from "path";
 import crypto from "crypto";
-import { fetchGrootPath } from "../utils";
+import { fetchGrootPath, readFileTryCatch } from "../utils";
 
 export function add(filePath: string) {
-    const absolutePath: string = path.resolve(filePath);
-    const fileContent: string = fs.readFileSync(absolutePath, "utf-8");
+    let fileContent: string = readFileTryCatch(filePath);
+    let absolutePath: string = path.resolve(filePath);
     let grootDirPath: string = fetchGrootPath();
 
     const hash: string = crypto
@@ -24,7 +24,7 @@ export function add(filePath: string) {
     const indexPath: string = path.join(grootDirPath, ".groot", "index.json");
 
     const indexContent: Record<string, string> = JSON.parse(
-        fs.readFileSync(indexPath, "utf-8"),
+        readFileTryCatch(indexPath),
     );
     indexContent[absolutePath] = hash;
     fs.writeFileSync(indexPath, JSON.stringify(indexContent, null, 2));

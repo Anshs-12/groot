@@ -38,7 +38,7 @@ switch (command) {
             break;
         }
     case "log":
-        if (args[1] === null) {
+        if (!args[1]) {
             log();
             break;
         } else if (args[1] === "--oneline") {

@@ -1,6 +1,6 @@
 import path from "path";
 import fs from "fs";
-import { readGrootIgnore, fetchGrootPath } from "../utils";
+import { readGrootIgnore, fetchGrootPath, readFileTryCatch } from "../utils";
 import type { indexJsonFileStructure, commitStructure } from "../utils";
 import crypto from "crypto";
 
@@ -22,23 +22,19 @@ export function status() {
 
     let grootFolderPath: string = fetchGrootPath();
     let headJsonContent: string = JSON.parse(
-        fs.readFileSync(
-            path.join(grootFolderPath, ".groot", `HEAD.json`),
-            "utf-8",
-        ),
+        readFileTryCatch(path.join(grootFolderPath, ".groot", `HEAD.json`)),
     );
 
     let allSnapShots: Record<string, string> = {};
     if (headJsonContent !== null) {
         let headCommitContent: commitStructure = JSON.parse(
-            fs.readFileSync(
+            readFileTryCatch(
                 path.join(
                     grootFolderPath,
                     ".groot",
                     "commits",
                     `${headJsonContent}.json`,
                 ),
-                "utf-8",
             ),
         );
         allSnapShots = headCommitContent.snapshot;
@@ -46,7 +42,7 @@ export function status() {
 
     // retri IndexJsonRecord for faster lookup rather than looping again and again.
     let indexJsonRecord: Record<string, string> = JSON.parse(
-        fs.readFileSync(indexJsonPath, "utf-8"),
+        readFileTryCatch(indexJsonPath),
     );
     scanDirectory(
         grootFolderPath,
@@ -93,10 +89,8 @@ function scanDirectory(
                     allSnapShots,
                 );
             } else {
-                let receivedFileContent: string = fs.readFileSync(
-                    dynamicPathOfdirPath,
-                    "utf-8",
-                );
+                let receivedFileContent: string =
+                    readFileTryCatch(dynamicPathOfdirPath);
 
                 let receivedFileContentHash: string = crypto
                     .createHash("sha256")
@@ -113,7 +107,7 @@ function scanDirectory(
                     indexJsonRecord,
                 );
                 if (checkIndexJsonValue === "modified") {
-                    // this means that this file is not modified and has been added to groot to be committed.
+                    // this means that this file is modified and has been added to groot to be committed.
                     modifiedFile.push(dynamicFileContent.file);
                 } else if (checkIndexJsonValue) {
                     stagingArea.push(dynamicFileContent.file);

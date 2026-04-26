@@ -4,8 +4,7 @@ import fs from "fs";
 export function readGrootIgnore(): string[] {
     let grootIgnoreContent: string[];
     let grootIgnorePath: string = path.join(fetchGrootPath(), ".grootignore");
-    grootIgnoreContent = fs
-        .readFileSync(grootIgnorePath, "utf-8")
+    grootIgnoreContent = readFileTryCatch(grootIgnorePath)
         .split("\n")
         .map((eachWord) => eachWord.trim()) // removes the unwanted spaces characters like \r or \n
         .filter((eachWord) => eachWord !== "");
@@ -34,11 +33,24 @@ export function fetchGrootPath(): string {
     */
 }
 
+export function readFileTryCatch(filePath: string): string {
+    // a helper function to implement try-catch for reading files or opening directories
+    let fileContent: string = "";
+    let absolutePath: string = path.resolve(filePath);
+    try {
+        fileContent = fs.readFileSync(absolutePath, "utf-8");
+    } catch (e) {
+        console.log(`File doesn't exist at path: ${filePath}`);
+        process.exit(1);
+    }
+    return fileContent;
+}
+
 export function fetchIndexJsonPath(): string {
     return path.join(fetchGrootPath(), ".groot", "index.json");
 }
 export function fetchIndexJsonContent(): Record<string, string> {
-    return JSON.parse(fs.readFileSync(fetchIndexJsonPath(), "utf-8"));
+    return JSON.parse(readFileTryCatch(fetchIndexJsonPath()));
 }
 
 export type indexJsonFileStructure = {

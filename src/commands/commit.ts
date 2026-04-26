@@ -2,14 +2,14 @@ import fs from "fs";
 import path from "path";
 import crypto from "crypto";
 import type { commitStructure } from "../utils";
-import { fetchGrootPath } from "../utils";
+import { fetchGrootPath, readFileTryCatch } from "../utils";
 
 export function commit(message: string) {
     let grootDirPath: string = fetchGrootPath();
     let indexJsonPath: string = path.join(grootDirPath, ".groot", "index.json");
 
     let indexJsonFilecontent: Record<string, string> = JSON.parse(
-        fs.readFileSync(indexJsonPath, "utf-8"),
+        readFileTryCatch(indexJsonPath),
     );
     if (Object.keys(indexJsonFilecontent).length === 0) {
         console.log(`Nothing staged which is pending to be commit`);
@@ -18,7 +18,7 @@ export function commit(message: string) {
 
         let headPath: string = path.join(grootDirPath, ".groot", "HEAD.json");
         // reading out the HEAD.json content finding the last commit
-        let head: string = JSON.parse(fs.readFileSync(headPath, "utf-8"));
+        let head: string = JSON.parse(readFileTryCatch(headPath));
         // retrieving the snapshot if it exists otherwise creating a new snapshot for the intial commit;
         let retrievedRecord: Record<string, string>;
         if (head === null) {
@@ -32,7 +32,7 @@ export function commit(message: string) {
                 `${head}.json`,
             );
             let parentCommitContent: commitStructure = JSON.parse(
-                fs.readFileSync(parentCommitPath, "utf-8"),
+                readFileTryCatch(parentCommitPath),
             );
             let mergedRecords = {
                 ...parentCommitContent.snapshot,

@@ -1,6 +1,6 @@
 import path from "path";
 import fs from "fs";
-import { fetchGrootPath } from "../utils";
+import { fetchGrootPath, readFileTryCatch } from "../utils";
 import type { commitStructure } from "../utils";
 
 export function log() {
@@ -23,7 +23,7 @@ function iterateCommits(oneline: boolean) {
             `${commitPointer}` + ".json",
         );
         let commitContent: commitStructure = JSON.parse(
-            fs.readFileSync(commitPath, "utf-8"),
+            readFileTryCatch(commitPath),
         );
         // structure of the output
         // commit Hash
@@ -40,9 +40,7 @@ function iterateCommits(oneline: boolean) {
 
 export function getHeadPointer(grootDirPath: string): string {
     let headJSONPath: string = path.join(grootDirPath, ".groot", "HEAD.json");
-    let headContent: string = JSON.parse(
-        fs.readFileSync(headJSONPath, "utf-8"),
-    );
+    let headContent: string = JSON.parse(readFileTryCatch(headJSONPath));
     return headContent;
 }
 
