@@ -1,1 +1,4 @@
-console.log("Hello via Bun!");
+console.log("Hello  Bun!");
+for (let i: number = 0; i < 10; i++) {
+    console.log(i);
+}

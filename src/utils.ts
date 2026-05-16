@@ -53,6 +53,20 @@ export function fetchIndexJsonContent(): Record<string, string> {
     return JSON.parse(readFileTryCatch(fetchIndexJsonPath()));
 }
 
+export function getHeadCommit(): commitStructure {
+    let grootDirPath: string = fetchGrootPath();
+    let headJsonPath: string = path.join(grootDirPath, ".groot", "HEAD.json");
+    let HEAD: string = JSON.parse(readFileTryCatch(headJsonPath));
+    let headCommitPath: string = path.join(
+        grootDirPath,
+        ".groot",
+        "commits",
+        `${HEAD}.json`,
+    );
+    // console.log(`headCommit: ${HEAD}`);
+    return JSON.parse(readFileTryCatch(headCommitPath));
+}
+
 export type indexJsonFileStructure = {
     file: string;
     hash: string;
@@ -64,4 +78,17 @@ export type commitStructure = {
     timeStamp: string;
     snapshot: Record<string, string>;
     parent: string | null;
+};
+
+export type pathNode = {
+    row: number;
+    col: number;
+    parent: pathNode | null;
+};
+
+export type moveType = "add" | "delete" | "unchanged";
+
+export type move = {
+    line: string;
+    moveType: moveType;
 };
