@@ -13,6 +13,35 @@ Groot is a proof-of-concept VCS that demonstrates how distributed version contro
 - **Immutable History**: Commit objects are immutable; history is a directed acyclic graph traversable via linked lists
 - **Efficient Diff Detection**: Myers diff algorithm for identifying line-level changes between commits
 
+## Installation
+
+```bash
+npm install -g grootx-vcs
+```
+
+That's it. The `groot` command is now available globally.
+
+### Local Development Setup
+
+If you want to contribute or run from source:
+
+1. **Clone the repository**
+```bash
+    git clone https://github.com/Anshs-12/groot.git
+    cd groot
+```
+
+2. **Install dependencies**
+```bash
+    bun install
+```
+
+3. **Link as global command**
+```bash
+    bun link --global
+    groot init
+```
+
 ## How It Works
 
 ### Architecture
@@ -101,7 +130,9 @@ Initialize a new Groot repository in the current directory.
 
 ```bash
 $ groot init
-Initializing an empty groot repository...
+# Displays ASCII art banner and initializes .groot/ directory
+# Repo: /path/to/your/project
+# Repo initialized successfully
 ```
 
 Creates `.groot/` with the object store, commit history, and index structure.
@@ -181,10 +212,13 @@ Show differences between the working file and the HEAD commit.
 
 ```bash
 $ groot diff src/utils.ts
-{ line: "const x = 1;", moveType: "unchanged" }
-{ line: "const y = 2;", moveType: "add" }
-{ line: "const z = 3;", moveType: "delete" }
+
+- const x = 1;
++ const y = 2;
+  const z = 3;
 ```
+
+Lines prefixed with `-` are deleted (red), `+` are added (green), and space prefix is unchanged.
 
 Uses Myers diff algorithm to generate a minimal edit script. Output shows:
 
@@ -211,47 +245,6 @@ Display all available commands and usage.
 ```bash
 $ groot help
 ```
-
-## Installation
-
-### Prerequisites
-
-- **Bun** (v1.3.14+): Fast JavaScript runtime
-- **Node.js** (v18+): For TypeScript/crypto support
-- **TypeScript** (v5.9+): Type safety
-
-### Setup
-
-1. **Clone or download the repository**
-
-    ```bash
-    git clone <repo-url>
-    cd groot
-    ```
-
-2. **Install dependencies**
-
-    ```bash
-    bun install
-    ```
-
-3. **Run locally**
-
-    ```bash
-    # Start the CLI
-    bun run src/cli.ts init
-    bun run src/cli.ts add <file>
-    bun run src/cli.ts commit -m "Your message"
-
-    # Watch mode for development
-    bun run --watch src/cli.ts
-    ```
-
-4. **(Optional) Link as global command**
-    ```bash
-    bun link --global
-    groot init
-    ```
 
 ## Project Structure
 
