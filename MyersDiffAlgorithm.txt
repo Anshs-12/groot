@@ -135,3 +135,79 @@ IMPORTANT:
     Therefore, the algorithm immediately stops at edit distance 2
     without exploring larger edit distances like 3 or 4,
     because those paths would already be worse solutions.
+
+
+## Understanding the code part of Myers Diff Algorithm:
+
+    Above, we had learnt about how the algorithm actually behaves and works
+    on paper point of view, but now we will dive into the code and understand
+    it completely from scratch.
+
+    Let's take the same example:
+    oldContent = [a,b,c]
+    newContent = [a,x,c]
+
+    Here, first we start running a outer loop which is basically the edit distance loop.
+    This loop starts iterating over all the distances from 0 to maxDistance possible
+    which is total length of the oldContent + newContent length.
+
+    This outer loop, is defined by a variable d in our code which represents the current
+    edit distance being explored.
+
+    For each value of this distance d, we tend to explore all the possible diagonals
+    that are reachable via another loop which is the inside loop being defined using the
+    variable 'k'.
+
+    That is at distance d=0, we can only reach diagonal 0 and move along diagonal 0 as it
+    costs nothing to move if the lines are "unchanged".
+
+    This way when d=1, the possible diagonals if we look mathematically is from -d to +d
+    with an incrementation of +2 for each step. This has been proved via maths, and can
+    be logically be looked even.
+    If the previous distance d was 0, and now its d=1, so we are allowed to move 1 distance each
+    to the right and down from this diagonal 0, whihc makes us reach the diagonal k=-1, and k=1
+
+    This way, at edit distance d=2, we can move from -2 to +2, that is -2,0,+2.
+    As proving mathematically, we understand that previously we reached diagonal cells with
+    k=-1 and k=1, now 1 more possible edit distance is being allowed, so we can move
+    -2 which is right
+    +2 which is down
+    and diagonal 0 which is between them
+
+    This way we are able to cover all the possibilities furhter finding the best possible path.
+
+    Now, at each step first we greedily consume all the diagonals available which basically means
+    if the oldContentValue === newContentValue, so we keep on exploring otherwise we move either of
+    the two directions.
+
+    And at each new distance, we tend to decide the maxium possible value between the right and down
+    values to be stored at that diagonal position, which is the array V[k].
+
+    V[k] basically tells the farthest possible value we had reached on this diagonal.
+
+    While, moving ahead we keep on storing the snapshot of the V[k] array so that we can travel
+    back to construct the path properly.
+
+    Moving down from 0,0 is called as Forward Pass and again coming back via construction is called
+    as Backward Pass.
+
+    The algorithm stops when we reach the goal and at that point we call the construction function
+    which again works in similar fashion.
+
+    The backward pass basically is just a contruction function which builds up the moves array
+    by traversing the V[k] array in reverse order, where each of the value in the moves[] array
+    is a line and the type it was "unchanged", "added" or "deleted".
+
+    First comparing and checking if the oldContentValue === newContentValue, if yes we move to the
+    next diagonal otherwise we move either up or left.
+
+    Now, if we are not able to move either of the ways, we check left and up and move to the
+    diagonal which has the maximum value.
+
+    This way we can reconstruct the path from the goal to the start, again by traversing the diagonals.
+
+    Finally, we return the moves array in by reversing it, so that the path is in the correct order.
+    Then its just printing in the proper order based on the moveType and the value.
+
+
+This is it, entire Myers Diff Algorithm.

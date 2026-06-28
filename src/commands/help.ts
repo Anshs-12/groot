@@ -26,6 +26,12 @@ export function help() {
         `   ${command}groot status${reset}                   Show working tree status`,
     );
 
+    console.log(`
+${section}compare changes${reset}`);
+    console.log(
+        `   ${command}groot diff <file>${reset}                Show differences between working file and HEAD`,
+    );
+
     console.log(`\n${section}save your work${reset}`);
     console.log(
         `   ${command}groot commit -m "message"${reset}      Record changes to the repository`,

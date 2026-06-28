@@ -80,10 +80,9 @@ export type commitStructure = {
     parent: string | null;
 };
 
-export type pathNode = {
+export type node = {
     row: number;
     col: number;
-    parent: pathNode | null;
 };
 
 export type moveType = "add" | "delete" | "unchanged";

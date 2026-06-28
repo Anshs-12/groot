@@ -7,6 +7,7 @@ import { log, logOneline } from "./commands/log.ts";
 import { status } from "./commands/status.ts";
 import { help } from "./commands/help.ts";
 import { restore } from "./commands/restore.ts";
+import { diff } from "./commands/diff.ts";
 const args = process.argv.slice(2);
 const command = args[0];
 
@@ -16,7 +17,7 @@ switch (command) {
         break;
     case "add":
         if (!args[1]) {
-            console.log("Please provide a filename. Usage: gits add <file>");
+            console.log("Please provide a filename. Usage: groot add <file>");
             break;
         }
         add(args[1]);
@@ -24,7 +25,7 @@ switch (command) {
     case "commit":
         if (args[1] !== "-m") {
             console.log(
-                `Please use proper format. Do groot /help for more information`,
+                `Please use proper format. Do groot help for more information`,
             );
             break;
         } else {
@@ -46,7 +47,7 @@ switch (command) {
             break;
         } else {
             console.log(
-                `Invalid command, please refer groot /help for all commands!`,
+                `Invalid command, please refer groot help for all commands!`,
             );
             break;
         }
@@ -56,13 +57,13 @@ switch (command) {
     case "restore":
         if (args[1] !== "--staged") {
             console.log(
-                `Invalid command, please refer groot /help for all commands!`,
+                `Invalid command, please refer groot help for all commands!`,
             );
             break;
         }
         if (!args[2]) {
             console.log(
-                `Please provide a file name, or refer groot /help for all commands!`,
+                `Please provide a file name, or refer groot help for all commands!`,
             );
             break;
         }
@@ -70,6 +71,15 @@ switch (command) {
         break;
     case "help":
         help();
+        break;
+    case "diff":
+        if (!args[1]) {
+            console.log(
+                `Please provide a filename. Usage: groot diff <file>`,
+            );
+            break;
+        }
+        diff(args[1]);
         break;
     default:
         help();

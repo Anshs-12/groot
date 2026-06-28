@@ -1,127 +1,91 @@
 import path from "path";
+import chalk from "chalk";
 import {
     fetchGrootPath,
     getHeadCommit,
     readFileTryCatch,
     type commitStructure,
-    type pathNode,
-    type moveType,
     type move,
+    type node,
 } from "../utils";
 
 export function diff(filePath: string) {
-    let completeFilePath: string = path.resolve(filePath);
+    const completeFilePath = path.resolve(filePath);
     console.log(`completeFilePath : ${completeFilePath}`);
 
-    let oldFileContent: string[] = getOldFileContent(completeFilePath);
-    let newFileContent: string[] = getNewFileContent(completeFilePath);
+    const oldFileContent: string[] = getOldFileContent(completeFilePath);
+    const newFileContent: string[] = getNewFileContent(completeFilePath);
 
-    // Implementing Myer's Diff Algorithm
-    let resultNode: pathNode = myersDiffAlgorithm(
+    const resultNode: move[] = myersDiffAlgorithm(
         oldFileContent,
         newFileContent,
     );
-    let constructionResult: move[] = construction(
-        resultNode,
-        oldFileContent,
-        newFileContent,
-    );
-    // console.log(`row: ${resultNode.row},col: ${resultNode.col}`);
-    // console.log(`resultArray: ${JSON.stringify(constructionResult, null, 2)}`);
-    // printResult(constructionResult);
+    printResult(resultNode);
 }
 
 function myersDiffAlgorithm(
     oldFileContent: string[],
     newFileContent: string[],
-): pathNode {
-    let m: number = oldFileContent.length + 1; // length of oldFileContent
-    let n: number = newFileContent.length + 1; // length of newFileContent
-    // console.log(`m value: ${m}`);
-    // console.log(`n value: ${n}`);
-    // console.log(`oldFileContent: ${oldFileContent}`);
-    // console.log(`newFileContent: ${newFileContent}`);
+): move[] {
+    const m: number = oldFileContent.length;
+    const n: number = newFileContent.length;
+    const totalSize: number = 2 * (m + n) + 1;
+    const offSet: number = m + n;
+    const V: Int32Array = new Int32Array(totalSize).fill(-1);
+    const goal_k: number = m - n;
 
-    let qu: pathNode[] = [];
-    let front: number = 0;
-    qu.push({ row: 0, col: 0, parent: null });
+    // snapshots Int32Array
+    const snapShots: Int32Array[] = [];
+    let finalNode: node = { row: 0, col: 0 };
+    // the number of edits being used so far.
+
     for (let d: number = 0; d <= m + n; d++) {
-        let qSize: number = qu.length - front;
-        for (let i = 0; i < qSize; i++) {
-            // BFS works here
-            let pop: pathNode = qu[front++]!;
-            let newNode: pathNode = greedyConsumeDiagonals(
-                pop,
+        // Save the previous V state before updating
+        const prevV: Int32Array = new Int32Array(V);
+        for (let k: number = -d; k <= d; k += 2) {
+            const idx = k + offSet;
+
+            const right = prevV[idx - 1]!;
+            const down = prevV[idx + 1]! + 1;
+
+            V[idx] = Math.max(right, down);
+            const row = V[idx]!;
+            const col = row - k;
+
+            const position: node = { row, col };
+
+            finalNode = greedyConsumeDiagonals(
+                position,
                 oldFileContent,
                 newFileContent,
             );
-            if (newNode.row === m - 1 && newNode.col === n - 1) {
-                return newNode;
-            }
-            // moving right -> add the new line
-            if (newNode.col < n) {
-                qu.push({
-                    row: newNode.row,
-                    col: newNode.col + 1,
-                    parent: newNode,
-                });
-            }
-            // moving down -> add the new line
-            if (newNode.row < m) {
-                qu.push({
-                    row: newNode.row + 1,
-                    col: newNode.col,
-                    parent: newNode,
-                });
+
+            V[idx] = finalNode.row;
+
+            if (k === goal_k && V[idx] === m) {
+                snapShots.push(new Int32Array(V));
+                finalNode = { row: m, col: n };
+                return construction(
+                    finalNode,
+                    snapShots,
+                    oldFileContent,
+                    newFileContent,
+                );
             }
         }
+        // storing snapshots!
+        snapShots.push(new Int32Array(V));
     }
     throw new Error("Myers diff failed — no path found");
 }
 
-function construction(
-    node: pathNode,
-    oldFileContent: string[],
-    newFileContent: string[],
-): move[] {
-    let moves: move[] = [];
-    while (node.parent !== null) {
-        let parent: pathNode = node.parent!;
-        let nodeRow: number = node.row;
-        let nodeCol: number = node.col;
-
-        if (parent.row + 1 === nodeRow && parent.col + 1 === nodeCol) {
-            moves.push({
-                line: newFileContent[parent.col]!,
-                moveType: "unchanged",
-            });
-        } else if (parent.row + 1 === nodeRow) {
-            moves.push({
-                line: oldFileContent[parent.row]!,
-                moveType: "delete",
-            });
-        } else if (parent.col + 1 === nodeCol) {
-            moves.push({
-                line: newFileContent[parent.col]!,
-                moveType: "add",
-            });
-        }
-        console.log(`nodeRow: ${nodeRow}, nodeCol: ${nodeCol}`);
-        console.log(`parentRow: ${parent.row}, parentCol: ${parent.col}`);
-
-        node = node.parent;
-    }
-    return moves.reverse();
-}
-
 function greedyConsumeDiagonals(
-    position: pathNode,
+    position: node,
     oldFiles: string[],
     newFiles: string[],
-): pathNode {
+): node {
     let row: number = position.row;
     let col: number = position.col;
-    let currentNode: pathNode = position;
     while (
         row < oldFiles.length &&
         col < newFiles.length &&
@@ -129,10 +93,57 @@ function greedyConsumeDiagonals(
     ) {
         row += 1;
         col += 1;
-        let newParent: pathNode = { row: row, col: col, parent: currentNode };
-        currentNode = newParent;
     }
-    return currentNode;
+    if (row > oldFiles.length) row = oldFiles.length;
+    if (col > newFiles.length) col = newFiles.length;
+    return { row, col };
+}
+
+function construction(
+    finalNode: node,
+    snapshot: Int32Array[],
+    oldFileContent: string[],
+    newFileContent: string[],
+): move[] {
+    const moves: move[] = [];
+    const m = oldFileContent.length;
+    const n = newFileContent.length;
+    const offSet = m + n;
+
+    let x = finalNode.row - 1;
+    let y = finalNode.col - 1;
+
+    for (let d = snapshot.length - 1; d >= 1; d--) {
+        const V = snapshot[d - 1]!;
+
+        while (x >= 0 && y >= 0 && oldFileContent[x] === newFileContent[y]) {
+            moves.push({ line: oldFileContent[x]!, moveType: "unchanged" });
+            x -= 1;
+            y -= 1;
+        }
+        let k: number = x - y;
+        let left: number = V[k + 1 + offSet]!;
+        let up: number = V[k - 1 + offSet]!;
+
+        if (x >= 0) {
+            if (up > left) {
+                moves.push({ line: oldFileContent[x]!, moveType: "delete" });
+                x -= 1;
+            }
+        }
+        if (y >= 0) {
+            if (left > up) {
+                moves.push({ line: newFileContent[y]!, moveType: "add" });
+                y -= 1;
+            }
+        }
+    }
+    while (x >= 0 && y >= 0 && oldFileContent[x] === newFileContent[y]) {
+        moves.push({ line: oldFileContent[x]!, moveType: "unchanged" });
+        x -= 1;
+        y -= 1;
+    }
+    return moves.reverse();
 }
 
 function getOldFileContent(completeFilePath: string): string[] {
@@ -147,22 +158,31 @@ function getOldFileContent(completeFilePath: string): string[] {
         path.join(grootDirPath, "objects", `${oldFileHash}`),
     ).split("\n");
 
-    if (fileContent[fileContent.length - 1] === "")
+    if (fileContent[fileContent.length - 1] === "") {
         fileContent = fileContent.slice(0, -1);
-
+    }
     return fileContent;
 }
 
 function getNewFileContent(completeFilePath: string): string[] {
     let fileContent: string[] = readFileTryCatch(completeFilePath).split("\n");
-    if (fileContent[fileContent.length - 1] === "")
+    if (fileContent[fileContent.length - 1] === "") {
         fileContent = fileContent.slice(0, -1);
+    }
     return fileContent;
 }
 
 function printResult(result: move[]) {
-    for (let value of result) {
-        console.log(value);
+    let output = "";
+    for (let move of result) {
+        if (move.moveType === "unchanged") {
+            output += ` ${move.line}\n`;
+        } else if (move.moveType === "delete") {
+            output += chalk.red(`- ${move.line}\n`);
+        } else if (move.moveType === "add") {
+            output += chalk.green(`+ ${move.line}\n`);
+        }
     }
+
+    console.log("\n" + output);
 }
-diff("index.ts");
