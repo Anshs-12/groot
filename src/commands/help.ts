@@ -29,7 +29,7 @@ export function help() {
     console.log(`
 ${section}compare changes${reset}`);
     console.log(
-        `   ${command}groot diff <file>${reset}                Show differences between working file and HEAD`,
+        `   ${command}groot diff <file>${reset}              Show differences between working file and HEAD`,
     );
 
     console.log(`\n${section}save your work${reset}`);
